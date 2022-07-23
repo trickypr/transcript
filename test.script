@@ -1,8 +1,8 @@
 let name = "trickypr";
 
 
-function other() {
+function function() {
     print("Hello " + name);
-}
+};
 
-other();
+function();

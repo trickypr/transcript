@@ -6,7 +6,7 @@ mod tokenizer;
 pub use parse::*;
 pub use tokenizer::*;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TokenTypes,
     start: usize,
@@ -14,7 +14,7 @@ pub struct Token {
     line: usize,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum TokenTypes {
     Comment { value: String },
     Identifier { value: String },

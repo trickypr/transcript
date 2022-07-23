@@ -21,7 +21,7 @@ pub enum Value {
     List(Vec<Value>),
     Function {
         args: Vec<String>,
-        body: Vec<AST>,
+        body: Box<AST>,
     },
     RustFunction {
         args: Vec<String>,
@@ -45,7 +45,7 @@ impl Display for Value {
                 }
                 write!(f, "]")
             }
-            Value::Function { args, body } => write!(f, "fn({}) {{ ... }}", args.join(", ")),
+            Value::Function { args, body: _ } => write!(f, "fn({}) {{ ... }}", args.join(", ")),
             Value::RustFunction { args, body } => {
                 write!(f, "fn({}) {{ [Binary Code] }}", args.join(", "))
             }
@@ -55,13 +55,14 @@ impl Display for Value {
 
 pub fn execute(code: &AST, env: Rc<RefCell<Environment>>) -> Value {
     match code {
-        AST::Program { statements } => {
-            let mut results = Vec::new();
+        AST::Block { statements } => {
+            let mut result = Value::Option(None);
+
             for statement in statements {
-                results.push(execute(statement, env.clone()));
+                result = execute(statement, env.clone());
             }
 
-            Value::List(results)
+            result
         }
         AST::VariableDefinition { name, value } => {
             let value = execute(value, env.clone());
@@ -106,15 +107,10 @@ pub fn execute(code: &AST, env: Rc<RefCell<Environment>>) -> Value {
 
                     let enclosing_environment = enclosing_environment.contain();
 
-                    let mut val = Value::Option(None);
-                    for statement in body {
-                        val = execute(&statement, enclosing_environment.clone());
-                    }
-
-                    val
+                    execute(&*body, enclosing_environment)
                 }
                 Value::RustFunction { args, body } => {
-                    let mut enclosing_environment = Environment::from_enclosing(env.clone());
+                    let enclosing_environment = Environment::from_enclosing(env.clone());
 
                     let call_args = call_args
                         .iter()

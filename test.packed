@@ -1,0 +1,6 @@
+ name = "trickypr"
+ other() {
+	print("Hello " + name)
+	
+}
+other()

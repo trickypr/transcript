@@ -1,4 +1,4 @@
-use std::thread::current;
+use std::fmt::Display;
 
 use super::{Token, TokenTypes};
 
@@ -16,7 +16,7 @@ mod language_keywords {
 
 #[derive(Debug, Clone)]
 pub enum AST {
-    Program {
+    Block {
         statements: Vec<AST>,
     },
     VariableDefinition {
@@ -26,7 +26,7 @@ pub enum AST {
     FunctionDefinition {
         name: String,
         params: Vec<Token>,
-        body: Vec<AST>,
+        body: BAST,
     },
     FunctionCall {
         name: String,
@@ -49,6 +49,15 @@ pub enum TermSymbol {
     Sub,
 }
 
+impl Display for TermSymbol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TermSymbol::Add => write!(f, "+"),
+            TermSymbol::Sub => write!(f, "-"),
+        }
+    }
+}
+
 /// The symbol used for factor eqns. Either * (Mul) or / (Div)
 #[derive(Debug, Clone)]
 pub enum FactorSymbol {
@@ -58,14 +67,19 @@ pub enum FactorSymbol {
 
 type Tokens = Vec<Token>;
 
-pub fn parse(mut tokens: Tokens) -> AST {
+#[inline]
+pub fn parse(tokens: &mut Tokens) -> AST {
     // Rust works best with pop and doesn't like you removing the first element
     // from a vec because it is slow. The solution is to reverse the vec so it
     // is faster
     tokens.reverse();
 
-    AST::Program {
-        statements: parse_block(&mut tokens),
+    parse_block(tokens)
+}
+
+pub fn parse_block(tokens: &mut Tokens) -> AST {
+    AST::Block {
+        statements: parse_block_internal(tokens),
     }
 }
 
@@ -76,11 +90,22 @@ fn is_valid_body_token(token: &Token) -> bool {
     }
 }
 
-fn parse_block(tokens: &mut Tokens) -> Vec<AST> {
+fn peek(tokens: &mut Tokens) -> Option<Token> {
+    tokens.last().cloned()
+}
+
+fn parse_block_internal(tokens: &mut Tokens) -> Vec<AST> {
     let mut statements = Vec::new();
 
     while tokens.len() != 0 && is_valid_body_token(&tokens[tokens.len() - 1]) {
         statements.push(*parse_statement(tokens));
+
+        // Expect semicolon
+        let semicolon = tokens.pop().unwrap();
+        if semicolon.token_type != TokenTypes::Semi {
+            println!("Expected semicolon, got: {:?}", semicolon);
+            panic!("Expected semicolon!");
+        }
     }
 
     statements
@@ -91,7 +116,9 @@ fn parse_statement(tokens: &mut Tokens) -> BAST {
 
     let statement = match token.token_type {
         TokenTypes::Identifier { value: keyword } => {
-            if keyword == language_keywords::get_function_keyword() {
+            if keyword == language_keywords::get_function_keyword()
+                && peek(tokens).unwrap().token_type != TokenTypes::OpenParen
+            {
                 parse_function_definition(tokens)
             } else if keyword == language_keywords::get_variable_keyword() {
                 parse_variable_definition(tokens)
@@ -132,11 +159,16 @@ fn parse_function_definition(tokens: &mut Tokens) -> BAST {
 
     let body = parse_block(tokens);
 
-    if tokens.pop().unwrap().token_type != TokenTypes::CloseCurly {
+    let next_token = tokens.pop().unwrap();
+    if next_token.token_type != TokenTypes::CloseCurly {
         panic!("Expected '}}'");
     }
 
-    Box::new(AST::FunctionDefinition { name, params, body })
+    Box::new(AST::FunctionDefinition {
+        name,
+        params,
+        body: Box::new(body),
+    })
 }
 
 fn parse_variable_definition(tokens: &mut Tokens) -> BAST {
@@ -152,11 +184,6 @@ fn parse_variable_definition(tokens: &mut Tokens) -> BAST {
     }
 
     let value = parse_expression(tokens);
-
-    // Consume semicolon
-    if tokens.pop().unwrap().token_type != TokenTypes::Semi {
-        panic!("Expected ';'");
-    }
 
     Box::new(AST::VariableDefinition { name, value })
 }
@@ -185,16 +212,6 @@ fn parse_function_call(tokens: &mut Tokens, name: String) -> BAST {
             current_token = tokens.pop().unwrap();
         }
     }
-
-    current_token = tokens.pop().unwrap();
-
-    // Consume semicolon
-    if current_token.token_type != TokenTypes::Semi {
-        println!("{:?}", current_token);
-        panic!("Expected ';'");
-    }
-
-    let _ = current_token;
 
     Box::new(AST::FunctionCall { name, args })
 }
