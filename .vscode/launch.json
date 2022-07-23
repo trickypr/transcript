@@ -1,0 +1,41 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'token_storage'",
+      "cargo": {
+        "args": ["build", "--bin=token_storage", "--package=token_storage"],
+        "filter": {
+          "name": "token_storage",
+          "kind": "bin"
+        }
+      },
+      "args": ["run", "./test.script"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'token_storage'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=token_storage",
+          "--package=token_storage"
+        ],
+        "filter": {
+          "name": "token_storage",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

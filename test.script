@@ -1,0 +1,8 @@
+let name = "trickypr";
+
+
+function other() {
+    print("Hello " + name);
+}
+
+other();
