@@ -9,6 +9,7 @@ pub fn pack(ast: &AST) -> String {
         AST::Block { statements } => {
             for (index, statement) in statements.iter().enumerate() {
                 output.push_str(&pack(statement));
+                output.push_str(";");
 
                 if index != statements.len() - 1 {
                     // We don't want to add a newline to the inside of blocks,
@@ -49,7 +50,7 @@ pub fn pack(ast: &AST) -> String {
                     .join(", "),
                 pack(body)
                     .split("\n")
-                    .map(|line| format!("\t{};", line))
+                    .map(|line| format!("\t{}", line))
                     .collect::<Vec<String>>()
                     .join("\n")
             ));
