@@ -32,6 +32,10 @@ pub enum AST {
         name: String,
         args: Vec<AST>,
     },
+    Assignment {
+        name: String,
+        value: BAST,
+    },
 
     // Expression symbols
     Term(BAST, TermSymbol, BAST),
@@ -114,23 +118,32 @@ fn parse_block_internal(tokens: &mut Tokens) -> Vec<AST> {
 fn parse_statement(tokens: &mut Tokens) -> BAST {
     let token = tokens.pop().unwrap();
 
-    let statement = match token.token_type {
+    match token.token_type {
         TokenTypes::Identifier { value: keyword } => {
             if keyword == language_keywords::get_function_keyword()
                 && peek(tokens).unwrap().token_type != TokenTypes::OpenParen
             {
-                parse_function_definition(tokens)
-            } else if keyword == language_keywords::get_variable_keyword() {
-                parse_variable_definition(tokens)
-            } else {
-                // Try a function call
-                parse_function_call(tokens, keyword)
+                return parse_function_definition(tokens);
             }
+
+            if keyword == language_keywords::get_variable_keyword()
+                && peek(tokens).unwrap().token_type.is_identifier()
+            {
+                return parse_variable_definition(tokens);
+            }
+
+            if peek(tokens).unwrap().token_type == TokenTypes::OpenParen {
+                return parse_function_call(tokens, keyword);
+            }
+
+            if peek(tokens).unwrap().token_type == TokenTypes::Equals {
+                return parse_assignment(tokens, keyword);
+            }
+
+            panic!("Unimplemented statement type");
         }
         _ => panic!("Unexpected token: {:?}", token),
-    };
-
-    statement
+    }
 }
 
 fn parse_function_definition(tokens: &mut Tokens) -> BAST {
@@ -214,6 +227,18 @@ fn parse_function_call(tokens: &mut Tokens, name: String) -> BAST {
     }
 
     Box::new(AST::FunctionCall { name, args })
+}
+
+fn parse_assignment(tokens: &mut Tokens, keyword: String) -> BAST {
+    let name = keyword;
+
+    if tokens.pop().unwrap().token_type != TokenTypes::Equals {
+        panic!("Expected '='");
+    }
+
+    let value = parse_expression(tokens);
+
+    Box::new(AST::Assignment { name, value })
 }
 
 #[inline]

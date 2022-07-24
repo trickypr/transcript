@@ -1,8 +1,8 @@
-let name = "trickypr";
-
+let let = "trickypr";
+let = "test";
 
 function function() {
-    print("Hello " + name);
+    print("Hello " + let);
 };
 
 function();

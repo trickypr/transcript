@@ -37,3 +37,12 @@ pub enum TokenTypes {
 
     Semi,
 }
+
+impl TokenTypes {
+    pub fn is_identifier(&self) -> bool {
+        match self {
+            TokenTypes::Identifier { .. } => true,
+            _ => false,
+        }
+    }
+}

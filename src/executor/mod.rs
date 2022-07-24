@@ -131,6 +131,12 @@ pub fn execute(code: &AST, env: Rc<RefCell<Environment>>) -> Value {
                 _ => panic!("Cannot call non-function!"),
             }
         }
+        AST::Assignment { name, value } => {
+            let value = execute(value, env.clone());
+            env.borrow_mut().assign(name, value);
+
+            Value::Option(None)
+        }
         AST::Term(left, op, right) => {
             let left = execute(left, env.clone());
             let right = execute(right, env.clone());

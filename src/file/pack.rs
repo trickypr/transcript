@@ -50,6 +50,9 @@ pub fn pack(ast: &AST) -> String {
                     .join(", ")
             ));
         }
+        AST::Assignment { name, value } => {
+            output.push_str(&format!("{} = {}", name, pack(value)));
+        }
         AST::Term(left, term, right) => {
             output.push_str(&format!("{} {} {}", pack(left), term, pack(right)));
         }
