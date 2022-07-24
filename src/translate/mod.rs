@@ -9,9 +9,10 @@ pub use tokenizer::*;
 #[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TokenTypes,
-    start: usize,
-    end: usize,
-    line: usize,
+    pub start: usize,
+    pub end: usize,
+    pub line: usize,
+    pub line_contents: String,
 }
 
 #[derive(PartialEq, Clone, Debug)]

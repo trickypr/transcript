@@ -17,7 +17,11 @@ pub fn pack(ast: &AST) -> String {
                 }
             }
         }
-        AST::VariableDefinition { name, value } => {
+        AST::VariableDefinition {
+            name,
+            value,
+            keyword_token: _,
+        } => {
             output.push_str(&format!(
                 "{} {} = {}",
                 VARIABLE_DEFINITION_CHARACTER,
@@ -25,7 +29,12 @@ pub fn pack(ast: &AST) -> String {
                 pack(value)
             ));
         }
-        AST::FunctionDefinition { name, params, body } => {
+        AST::FunctionDefinition {
+            name,
+            params,
+            body,
+            keyword_token: _,
+        } => {
             output.push_str(&format!(
                 "{} {}({}) {{\n{}\n}}",
                 FUNCTION_DEFINITION_CHARACTER,

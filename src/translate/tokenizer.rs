@@ -4,6 +4,7 @@ pub struct Tokenizer {
     input: String,
     current_char: usize,
     current_line: usize,
+    line_start: usize,
 
     token_start: usize,
     output: Vec<Token>,
@@ -16,7 +17,9 @@ impl Tokenizer {
             current_char: 0,
             token_start: 0,
             output: Vec::new(),
+
             current_line: 1,
+            line_start: 0,
         }
     }
 }
@@ -67,7 +70,11 @@ impl Tokenizer {
             ' ' | '\r' | '\t' => (),
             // TODO: Newline tokens should be tracked if they are not on lines
             // with a statement to ensure coherent spacing in the packed output
-            '\n' => self.current_line += 1,
+            '\n' => {
+                self.current_line += 1;
+                self.line_start = self.current_char;
+                self.token_start = self.current_char; // Prevent overflows across multiple lines
+            }
 
             '"' => self.scan_string(),
             '0'..='9' => self.scan_number(),
@@ -84,11 +91,21 @@ impl Tokenizer {
     }
 
     fn add_token(&mut self, token_type: TokenTypes) {
+        if self.line_start > self.token_start {
+            println!("Tokenizer: Token spanned across two lines");
+        }
+
         self.output.push(Token {
             token_type,
-            start: self.token_start,
-            end: self.current_char,
+            start: self.token_start - self.line_start,
+            end: self.current_char - self.line_start,
             line: self.current_line,
+            line_contents: self
+                .input
+                .split('\n')
+                .nth(self.current_line - 1)
+                .unwrap()
+                .to_string(),
         });
 
         self.token_start = self.current_char;
@@ -152,6 +169,6 @@ impl Tokenizer {
     }
 
     fn not_at_end(&self) -> bool {
-        self.current_char < self.input.len()
+        self.input.chars().nth(self.current_char).is_some()
     }
 }

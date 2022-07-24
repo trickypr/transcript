@@ -5,7 +5,11 @@ use std::{
     rc::Rc,
 };
 
-use crate::translate::{TermSymbol, TokenTypes, AST};
+use crate::{
+    file::{FUNCTION_DEFINITION_CHARACTER, VARIABLE_DEFINITION_CHARACTER},
+    translate::{TermSymbol, Token, TokenTypes, AST},
+    utils::warn_token,
+};
 
 pub use self::environment::Environment;
 
@@ -53,6 +57,13 @@ impl Display for Value {
     }
 }
 
+fn warn_about_text_tokens(token: &Token) {
+    // We want to provide a warning to the user if they are directly
+    // running a script to recommend that they pack it. Maybe in the
+    // future this will become a hard error.
+    warn_token(token, "Running scripts containing text-based keywords is not recommended. You should pack your scripts instead");
+}
+
 pub fn execute(code: &AST, env: Rc<RefCell<Environment>>) -> Value {
     match code {
         AST::Block { statements } => {
@@ -64,13 +75,34 @@ pub fn execute(code: &AST, env: Rc<RefCell<Environment>>) -> Value {
 
             result
         }
-        AST::VariableDefinition { name, value } => {
+        AST::VariableDefinition {
+            name,
+            value,
+            keyword_token,
+        } => {
+            if let TokenTypes::Identifier { value } = &keyword_token.token_type {
+                if value != VARIABLE_DEFINITION_CHARACTER {
+                    warn_about_text_tokens(&keyword_token);
+                }
+            }
+
             let value = execute(value, env.clone());
             env.borrow_mut().define(name, value);
 
             Value::Option(None)
         }
-        AST::FunctionDefinition { name, params, body } => {
+        AST::FunctionDefinition {
+            name,
+            params,
+            body,
+            keyword_token,
+        } => {
+            if let TokenTypes::Identifier { value } = &keyword_token.token_type {
+                if value != FUNCTION_DEFINITION_CHARACTER {
+                    warn_about_text_tokens(&keyword_token);
+                }
+            }
+
             let function = Value::Function {
                 args: params
                     .iter()

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::config::Config;
+use crate::utils::Config;
 
 use super::{Token, TokenTypes};
 
@@ -14,11 +14,13 @@ pub enum AST {
     VariableDefinition {
         name: String,
         value: BAST,
+        keyword_token: Token,
     },
     FunctionDefinition {
         name: String,
         params: Vec<Token>,
         body: BAST,
+        keyword_token: Token,
     },
     FunctionCall {
         name: String,
@@ -120,36 +122,38 @@ fn parse_block_internal(tokens: &mut Tokens, config: &Config) -> Vec<AST> {
 fn parse_statement(tokens: &mut Tokens, config: &Config) -> BAST {
     let token = tokens.pop().unwrap();
 
-    match token.token_type {
+    match &token.token_type {
         TokenTypes::Identifier { value: keyword } => {
             if config.match_function_keyword(&keyword)
                 && peek(tokens).unwrap().token_type != TokenTypes::OpenParen
             {
-                return parse_function_definition(tokens, config);
+                return parse_function_definition(tokens, config, token);
             }
 
             if config.match_variable_keyword(&keyword)
                 && peek(tokens).unwrap().token_type.is_identifier()
             {
-                return parse_variable_definition(tokens);
+                return parse_variable_definition(tokens, token);
             }
 
             if peek(tokens).unwrap().token_type == TokenTypes::OpenParen {
-                return parse_function_call(tokens, keyword);
+                return parse_function_call(tokens, keyword.to_string());
             }
 
             if peek(tokens).unwrap().token_type == TokenTypes::Equals {
-                return parse_assignment(tokens, keyword);
+                return parse_assignment(tokens, keyword.to_string());
             }
 
             panic!("Unimplemented statement type");
         }
-        TokenTypes::Comment { value } => Box::new(AST::Comment { value }),
+        TokenTypes::Comment { value } => Box::new(AST::Comment {
+            value: value.to_string(),
+        }),
         _ => panic!("Unexpected token: {:?}", token),
     }
 }
 
-fn parse_function_definition(tokens: &mut Tokens, config: &Config) -> BAST {
+fn parse_function_definition(tokens: &mut Tokens, config: &Config, keyword_token: Token) -> BAST {
     let name = match tokens.pop().unwrap().token_type {
         TokenTypes::Identifier { value } => value,
         _ => panic!("Expected function name"),
@@ -184,10 +188,11 @@ fn parse_function_definition(tokens: &mut Tokens, config: &Config) -> BAST {
         name,
         params,
         body: Box::new(body),
+        keyword_token,
     })
 }
 
-fn parse_variable_definition(tokens: &mut Tokens) -> BAST {
+fn parse_variable_definition(tokens: &mut Tokens, keyword_token: Token) -> BAST {
     let token = tokens.pop().unwrap();
 
     let name = match token.token_type {
@@ -201,7 +206,11 @@ fn parse_variable_definition(tokens: &mut Tokens) -> BAST {
 
     let value = parse_expression(tokens);
 
-    Box::new(AST::VariableDefinition { name, value })
+    Box::new(AST::VariableDefinition {
+        name,
+        value,
+        keyword_token,
+    })
 }
 
 fn parse_function_call(tokens: &mut Tokens, name: String) -> BAST {

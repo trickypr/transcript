@@ -4,16 +4,20 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
-use config::Config;
 use executor::{execute, Environment};
+use fern::{
+    colors::{Color, ColoredLevelConfig},
+    Dispatch,
+};
 use file::pack;
+use utils::Config;
 
 use crate::executor::Value;
 
-mod config;
 mod executor;
 mod file;
 mod translate;
+mod utils;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -42,6 +46,8 @@ enum Commands {
 }
 
 fn main() {
+    setup_logger().unwrap();
+
     let args = Cli::parse();
     let config = Config::new();
 
@@ -70,11 +76,6 @@ fn main() {
             let tokenizer = translate::Tokenizer::from_string(contents);
             let mut tokens = tokenizer.tokenize();
 
-            // We want to provide a warning to the user if they are directly
-            // running a script to recommend that they pack it. Maybe in the
-            // future this will become a hard error.
-            for token in &tokens {}
-
             let ast = translate::parse(&mut tokens, &config);
             let mut env = Environment::new();
 
@@ -89,4 +90,20 @@ fn main() {
             // println!("{:#?}", ast);
         }
     }
+}
+
+fn setup_logger() -> Result<(), fern::InitError> {
+    let colors = ColoredLevelConfig::new()
+        .info(Color::Blue)
+        .warn(Color::Yellow);
+
+    Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!("{} {}", colors.color(record.level()), message))
+        })
+        .level(log::LevelFilter::Debug)
+        .chain(std::io::stdout())
+        .apply()?;
+
+    Ok(())
 }
