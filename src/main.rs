@@ -9,7 +9,7 @@ use fern::{
     colors::{Color, ColoredLevelConfig},
     Dispatch,
 };
-use file::pack;
+use file::{pack, unpack};
 use utils::Config;
 
 use crate::executor::Value;
@@ -37,7 +37,9 @@ enum Commands {
     },
     Unpack {
         #[clap(value_parser)]
-        file: String,
+        input: String,
+        #[clap(value_parser)]
+        output: String,
     },
     Run {
         #[clap(value_parser)]
@@ -67,7 +69,16 @@ fn main() {
             let mut file = File::create(output).unwrap();
             file.write_all(new_file_contents.as_bytes()).unwrap();
         }
-        Commands::Unpack { file: _ } => todo!(),
+        Commands::Unpack { input, output } => {
+            let mut file = File::open(input).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+
+            let unpacked = unpack(contents, &config);
+
+            let mut file = File::create(output).unwrap();
+            file.write_all(unpacked.as_bytes()).unwrap();
+        }
         Commands::Run { file } => {
             let mut file = File::open(file).unwrap();
             let mut contents = String::new();

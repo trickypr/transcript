@@ -1,8 +1,8 @@
 // Yes, this is atrocious. No, it is not valid Javascript. This is a proof of;
 // concept. It is meant to show that it is possible to handle naming conflicts.;
- let = "trickypr";
+julistaa let = "trickypr";
 let = "test";
- function() {
+toiminto function() {
 	print("Hello " + let);
 };
 function();
