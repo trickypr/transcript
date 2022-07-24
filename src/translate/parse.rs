@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::config::Config;
+
 use super::{Token, TokenTypes};
 
 type BAST = Box<AST>;
@@ -72,18 +74,18 @@ pub enum FactorSymbol {
 type Tokens = Vec<Token>;
 
 #[inline]
-pub fn parse(tokens: &mut Tokens) -> AST {
+pub fn parse(tokens: &mut Tokens, config: &Config) -> AST {
     // Rust works best with pop and doesn't like you removing the first element
     // from a vec because it is slow. The solution is to reverse the vec so it
     // is faster
     tokens.reverse();
 
-    parse_block(tokens)
+    parse_block(tokens, config)
 }
 
-pub fn parse_block(tokens: &mut Tokens) -> AST {
+pub fn parse_block(tokens: &mut Tokens, config: &Config) -> AST {
     AST::Block {
-        statements: parse_block_internal(tokens),
+        statements: parse_block_internal(tokens, config),
     }
 }
 
@@ -98,11 +100,11 @@ fn peek(tokens: &mut Tokens) -> Option<Token> {
     tokens.last().cloned()
 }
 
-fn parse_block_internal(tokens: &mut Tokens) -> Vec<AST> {
+fn parse_block_internal(tokens: &mut Tokens, config: &Config) -> Vec<AST> {
     let mut statements = Vec::new();
 
     while tokens.len() != 0 && is_valid_body_token(&tokens[tokens.len() - 1]) {
-        statements.push(*parse_statement(tokens));
+        statements.push(*parse_statement(tokens, config));
 
         // Expect semicolon
         let semicolon = tokens.pop().unwrap();
@@ -115,18 +117,18 @@ fn parse_block_internal(tokens: &mut Tokens) -> Vec<AST> {
     statements
 }
 
-fn parse_statement(tokens: &mut Tokens) -> BAST {
+fn parse_statement(tokens: &mut Tokens, config: &Config) -> BAST {
     let token = tokens.pop().unwrap();
 
     match token.token_type {
         TokenTypes::Identifier { value: keyword } => {
-            if keyword == language_keywords::get_function_keyword()
+            if config.match_function_keyword(&keyword)
                 && peek(tokens).unwrap().token_type != TokenTypes::OpenParen
             {
-                return parse_function_definition(tokens);
+                return parse_function_definition(tokens, config);
             }
 
-            if keyword == language_keywords::get_variable_keyword()
+            if config.match_variable_keyword(&keyword)
                 && peek(tokens).unwrap().token_type.is_identifier()
             {
                 return parse_variable_definition(tokens);
@@ -146,7 +148,7 @@ fn parse_statement(tokens: &mut Tokens) -> BAST {
     }
 }
 
-fn parse_function_definition(tokens: &mut Tokens) -> BAST {
+fn parse_function_definition(tokens: &mut Tokens, config: &Config) -> BAST {
     let name = match tokens.pop().unwrap().token_type {
         TokenTypes::Identifier { value } => value,
         _ => panic!("Expected function name"),
@@ -170,7 +172,7 @@ fn parse_function_definition(tokens: &mut Tokens) -> BAST {
         panic!("Expected '{{'");
     }
 
-    let body = parse_block(tokens);
+    let body = parse_block(tokens, config);
 
     let next_token = tokens.pop().unwrap();
     if next_token.token_type != TokenTypes::CloseCurly {

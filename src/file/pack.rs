@@ -7,9 +7,14 @@ pub fn pack(ast: &AST) -> String {
 
     match ast {
         AST::Block { statements } => {
-            for statement in statements {
+            for (index, statement) in statements.iter().enumerate() {
                 output.push_str(&pack(statement));
-                output.push('\n');
+
+                if index != statements.len() - 1 {
+                    // We don't want to add a newline to the inside of blocks,
+                    // this causes weird formatting in stuff like functions.
+                    output.push_str("\n");
+                }
             }
         }
         AST::VariableDefinition { name, value } => {
@@ -35,7 +40,7 @@ pub fn pack(ast: &AST) -> String {
                     .join(", "),
                 pack(body)
                     .split("\n")
-                    .map(|line| format!("\t{}", line))
+                    .map(|line| format!("\t{};", line))
                     .collect::<Vec<String>>()
                     .join("\n")
             ));

@@ -4,11 +4,13 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
+use config::Config;
 use executor::{execute, Environment};
 use file::pack;
 
 use crate::executor::Value;
 
+mod config;
 mod executor;
 mod file;
 mod translate;
@@ -41,6 +43,7 @@ enum Commands {
 
 fn main() {
     let args = Cli::parse();
+    let config = Config::new();
 
     match args.command {
         Commands::Pack { input, output } => {
@@ -51,7 +54,7 @@ fn main() {
             let tokenizer = translate::Tokenizer::from_string(contents);
             let mut tokens = tokenizer.tokenize();
 
-            let ast = translate::parse(&mut tokens);
+            let ast = translate::parse(&mut tokens, &config);
             let new_file_contents = pack(&ast);
 
             // Write file to output
@@ -67,7 +70,12 @@ fn main() {
             let tokenizer = translate::Tokenizer::from_string(contents);
             let mut tokens = tokenizer.tokenize();
 
-            let ast = translate::parse(&mut tokens);
+            // We want to provide a warning to the user if they are directly
+            // running a script to recommend that they pack it. Maybe in the
+            // future this will become a hard error.
+            for token in &tokens {}
+
+            let ast = translate::parse(&mut tokens, &config);
             let mut env = Environment::new();
 
             env.add_rust_function("print", vec![String::from("value")], |args, _env| {

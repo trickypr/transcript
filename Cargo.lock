@@ -188,10 +188,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
+name = "tini"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e004df4c5f0805eb5f55883204a514cfa43a6d924741be29e871753a53d5565a"
+
+[[package]]
 name = "token_storage"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "tini",
 ]
 
 [[package]]

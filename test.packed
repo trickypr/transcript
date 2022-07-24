@@ -1,6 +1,6 @@
- name = "trickypr"
- other() {
-	print("Hello " + name)
-	
+ let = "trickypr"
+let = "test"
+ function() {
+	print("Hello " + let);
 }
-other()
+function()
