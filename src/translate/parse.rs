@@ -28,6 +28,9 @@ pub enum AST {
         name: String,
         value: BAST,
     },
+    Comment {
+        value: String,
+    },
 
     // Expression symbols
     Term(BAST, TermSymbol, BAST),
@@ -81,7 +84,7 @@ pub fn parse_block(tokens: &mut Tokens, config: &Config) -> AST {
 
 fn is_valid_body_token(token: &Token) -> bool {
     match &token.token_type {
-        TokenTypes::Identifier { value: _ } => true,
+        TokenTypes::Identifier { .. } | TokenTypes::Comment { .. } => true,
         _ => false,
     }
 }
@@ -94,13 +97,20 @@ fn parse_block_internal(tokens: &mut Tokens, config: &Config) -> Vec<AST> {
     let mut statements = Vec::new();
 
     while tokens.len() != 0 && is_valid_body_token(&tokens[tokens.len() - 1]) {
+        let is_comment = match &tokens[tokens.len() - 1].token_type {
+            TokenTypes::Comment { .. } => true,
+            _ => false,
+        };
+
         statements.push(*parse_statement(tokens, config));
 
-        // Expect semicolon
-        let semicolon = tokens.pop().unwrap();
-        if semicolon.token_type != TokenTypes::Semi {
-            println!("Expected semicolon, got: {:?}", semicolon);
-            panic!("Expected semicolon!");
+        if !is_comment {
+            // Expect semicolon
+            let semicolon = tokens.pop().unwrap();
+            if semicolon.token_type != TokenTypes::Semi {
+                println!("Expected semicolon, got: {:?}", semicolon);
+                panic!("Expected semicolon!");
+            }
         }
     }
 
@@ -134,6 +144,7 @@ fn parse_statement(tokens: &mut Tokens, config: &Config) -> BAST {
 
             panic!("Unimplemented statement type");
         }
+        TokenTypes::Comment { value } => Box::new(AST::Comment { value }),
         _ => panic!("Unexpected token: {:?}", token),
     }
 }

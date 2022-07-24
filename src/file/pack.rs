@@ -67,6 +67,7 @@ pub fn pack(ast: &AST) -> String {
         AST::Number(_) => todo!(),
         AST::String(value) => output.push_str(&format!("\"{}\"", value)),
         AST::Identifier(name) => output.push_str(&name),
+        AST::Comment { value } => output.push_str(&format!("// {}", value)),
     }
 
     output

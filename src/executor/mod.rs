@@ -46,7 +46,7 @@ impl Display for Value {
                 write!(f, "]")
             }
             Value::Function { args, body: _ } => write!(f, "fn({}) {{ ... }}", args.join(", ")),
-            Value::RustFunction { args, body } => {
+            Value::RustFunction { args, body: _ } => {
                 write!(f, "fn({}) {{ [Binary Code] }}", args.join(", "))
             }
         }
@@ -179,5 +179,6 @@ pub fn execute(code: &AST, env: Rc<RefCell<Environment>>) -> Value {
             .borrow()
             .get(name)
             .expect(&format!("Undefined variable: {}", name)),
+        AST::Comment { value: _ } => Value::Option(None),
     }
 }

@@ -42,8 +42,18 @@ impl Tokenizer {
             '+' => self.add_token(TokenTypes::Plus),
             '-' => self.add_token(TokenTypes::Minus),
             '*' => self.add_token(TokenTypes::Star),
-            '/' => self.add_token(TokenTypes::Slash),
             '=' => self.add_token(TokenTypes::Equals),
+            '/' => {
+                if self.peek().unwrap() == '/' {
+                    self.advance();
+                    let comment_content = self.scan_comment().trim().to_string();
+                    self.add_token(TokenTypes::Comment {
+                        value: comment_content,
+                    });
+                } else {
+                    self.add_token(TokenTypes::Slash);
+                }
+            }
 
             '(' => self.add_token(TokenTypes::OpenParen),
             ')' => self.add_token(TokenTypes::CloseParen),
@@ -55,6 +65,8 @@ impl Tokenizer {
 
             // Ignore whitespace
             ' ' | '\r' | '\t' => (),
+            // TODO: Newline tokens should be tracked if they are not on lines
+            // with a statement to ensure coherent spacing in the packed output
             '\n' => self.current_line += 1,
 
             '"' => self.scan_string(),
@@ -80,6 +92,20 @@ impl Tokenizer {
         });
 
         self.token_start = self.current_char;
+    }
+
+    fn peek(&self) -> Option<char> {
+        self.input.chars().nth(self.current_char)
+    }
+
+    fn scan_comment(&mut self) -> String {
+        let mut comment = String::new();
+
+        while self.peek().unwrap() != '\n' {
+            comment.push(self.advance().unwrap());
+        }
+
+        comment
     }
 
     fn scan_string(&mut self) {
