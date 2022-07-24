@@ -6,16 +6,6 @@ use super::{Token, TokenTypes};
 
 type BAST = Box<AST>;
 
-mod language_keywords {
-    pub fn get_function_keyword<'a>() -> &'a str {
-        "function"
-    }
-
-    pub fn get_variable_keyword<'a>() -> &'a str {
-        "let"
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum AST {
     Block {
